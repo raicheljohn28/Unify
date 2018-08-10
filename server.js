@@ -1,0 +1,48 @@
+const express = require('express')
+const bodyParser = require('body-parser')
+const morgan = require('morgan')
+const session = require('express-session')
+const dbConnection = require('./config/database') 
+const MongoStore = require('connect-mongo')(session)
+const passport = require('./config/passport');
+const app = express()
+const controller = require("./config/database/controllers/controller")
+const PORT = process.env.PORT || 3001;
+// const nodemailer = require('nodemailer');
+
+
+app.use (express.static("client/build"))
+// MIDDLEWARE
+app.use(morgan('dev'))
+app.use(
+	bodyParser.urlencoded({
+		extended: false
+	})
+)
+app.use(bodyParser.json())
+
+//Adding routes for API
+app.use(controller);
+
+// Sessions
+app.use(
+	session({
+		secret: 'kevin_ferguson', //pick a random string to make the hash that is generated secure
+		store: new MongoStore({ mongooseConnection: dbConnection }),
+		resave: false, //required
+		saveUninitialized: false //required
+	})
+)
+
+// Passport
+app.use(passport.initialize())
+app.use(passport.session()) // calls the deserializeUser
+
+
+// Routes
+require('./config/routes/user.js')(app)
+
+// Starting Server 
+app.listen(PORT, () => {
+	console.log(`App listening on PORT: ${PORT}`)
+})
